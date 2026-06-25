@@ -1,0 +1,85 @@
+version: "3.9"
+
+networks:
+  cluster-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  home_shared:
+  scratch_shared:
+  db_data:
+
+services:
+  slurmctl:
+    hostname: slurmctl
+    container_name: slurmctl
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: cluster-lab:latest
+    ports:
+      - "6817:6817"   # slurmctld
+      - "6818:6818"   # slurmdbd
+      - "6819:6819"   # slurmrestd
+    volumes:
+      - home_shared:/home
+      - scratch_shared:/scratch
+      - db_data:/var/lib/mysql
+      - ../config/slurm/slurm.conf:/etc/slurm/slurm.conf:ro
+      - ../config/slurm/cgroup.conf:/etc/slurm/cgroup.conf:ro
+      - ../config/nfs/exports:/etc/exports:ro
+    environment:
+      - CLUSTER_ROLE=controller
+      - SLURM_CLUSTER_NAME=cluster-lab
+    networks:
+      cluster-net:
+        ipv4_address: 172.20.0.2
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+      - SYS_NICE
+
+  node01:
+    hostname: node01
+    container_name: node01
+    image: cluster-lab:latest
+    volumes:
+      - home_shared:/home
+      - scratch_shared:/scratch
+      - ../config/slurm/slurm.conf:/etc/slurm/slurm.conf:ro
+      - ../config/slurm/cgroup.conf:/etc/slurm/cgroup.conf:ro
+    environment:
+      - CLUSTER_ROLE=worker
+    depends_on:
+      - slurmctl
+    networks:
+      cluster-net:
+        ipv4_address: 172.20.0.3
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+      - SYS_NICE
+
+  node02:
+    hostname: node02
+    container_name: node02
+    image: cluster-lab:latest
+    volumes:
+      - home_shared:/home
+      - scratch_shared:/scratch
+      - ../config/slurm/slurm.conf:/etc/slurm/slurm.conf:ro
+      - ../config/slurm/cgroup.conf:/etc/slurm/cgroup.conf:ro
+    environment:
+      - CLUSTER_ROLE=worker
+    depends_on:
+      - slurmctl
+    networks:
+      cluster-net:
+        ipv4_address: 172.20.0.4
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+      - SYS_NICE
