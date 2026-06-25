@@ -147,15 +147,22 @@ Hello from MPI process 0 of 2 on node01
 - **Accounting**: Disabled (`AccountingStorageType=none`) — Munge errors bypassed
 - **All nodes**: Cross-mounted `/home` via NFS, shared SSH authorized_keys
 
+## Features Added
+
+| # | Feature | Files | Status |
+|---|---------|-------|--------|
+| 1 | **sbatch job templates** | `scripts/jobs/hello_mpi.sbatch`, `hello_openmp.sbatch`, `README.md` | ✅ sbatch-ready |
+| 2 | **Cluster validation script** | `scripts/test-cluster.sh` (11 checks) | ✅ `bash /home/scripts/test-cluster.sh` |
+| 3 | **Multi-user environment** | `scripts/setup_users.sh` (alice/bob/charlie) | ✅ `bash /home/scripts/setup_users.sh` |
+| 4 | **Slurm QoS** | `config/slurm/qos_partitions.conf`, `scripts/setup_qos.sh` (high/normal/low) | ✅ `bash /home/scripts/setup_qos.sh` |
+| 5 | **GRES GPU simulation** | `config/slurm/gres.conf` + `tests/check_gpu.c` | ✅ 4 fake GPUs per node |
+
 ## Next Steps (Planned)
 
-- [ ] sbatch job script templates (MPI/OpenMP)
-- [ ] Cluster benchmark suite (HPL, IOR)
-- [ ] Multi-user environment with Slurm accounts
-- [ ] QoS and priority configuration
-- [ ] GRES (GPU simulation via fake GPU)
 - [ ] Monitoring & log aggregation
-- [ ] `test-cluster.sh` comprehensive validation script
+- [ ] Container image optimization (multi-stage build)
+- [ ] Ansible/Salt automation for deployment
+- [ ] Job dependency and array job examples
 
 ## License
 

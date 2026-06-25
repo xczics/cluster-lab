@@ -22,6 +22,22 @@ sleep 1
 mkdir -p /var/run/slurm /var/spool/slurmd /var/spool/slurm/d /var/log/slurm
 chown -R slurm:slurm /var/{run,spool,log}/slurm
 
+# 创建 GRES 模拟 GPU 设备（用于测试 GRES 作业调度）
+echo "[ENTRY] Creating fake GPU devices for GRES..."
+for i in 0 1 2 3; do
+  if [ ! -e /dev/fake_gpu${i} ]; then
+    mknod /dev/fake_gpu${i} c 10 2${i} 2>/dev/null || true
+    chmod 666 /dev/fake_gpu${i} 2>/dev/null || true
+  fi
+done
+
+# 加载 Lmod 模块系统
+echo "[ENTRY] Loading Lmod..."
+if [ -f /usr/share/lmod/lmod/init/bash ]; then
+  source /usr/share/lmod/lmod/init/bash
+  echo "[ENTRY] Lmod loaded — use: module load gcc/13.3.0 openmpi/4.1.6"
+fi
+
 # --- 按角色启动服务 ---
 
 case "${CLUSTER_ROLE}" in
@@ -76,8 +92,8 @@ case "${CLUSTER_ROLE}" in
     # 挂载 NFS
     echo "[ENTRY] Mounting NFS shares..."
     sleep 3
-    mount -t nfs -o proto=tcp,port=2049,nolock 172.20.0.2:/home /home || echo "NFS /home mount failed (non-fatal)"
-    mount -t nfs -o proto=tcp,port=2049,nolock 172.20.0.2:/scratch /scratch || echo "NFS /scratch mount failed (non-fatal)"
+    mount -t nfs -o proto=tcp,port=2049,nolock 172.20.0.10:/home /home || echo "NFS /home mount failed (non-fatal)"
+    mount -t nfs -o proto=tcp,port=2049,nolock 172.20.0.10:/scratch /scratch || echo "NFS /scratch mount failed (non-fatal)"
 
     # 启动 slurmd
     echo "[ENTRY] Starting slurmd..."
