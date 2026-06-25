@@ -15,8 +15,13 @@ echo "[ENTRY] Starting Munge..."
 mkdir -p /run/munge
 chown munge:munge /run/munge
 chmod 755 /run/munge
-sudo -u munge /usr/sbin/munged || true
+sudo -u munge /usr/sbin/munged --num-threads=10 || true
 sleep 1
+
+# 确保 slurm 用户 home 目录存在
+mkdir -p /home/slurm
+chown slurm:slurm /home/slurm
+chmod 755 /home/slurm
 
 # 确保 Slurm 目录存在
 mkdir -p /var/run/slurm /var/spool/slurmd /var/spool/slurm/d /var/log/slurm
@@ -80,20 +85,25 @@ case "${CLUSTER_ROLE}" in
     /usr/sbin/rpc.nfsd 8
     /usr/sbin/rpc.mountd -p 20048
 
+    # 启动 Flask 计费面板
+    echo "[ENTRY] Starting Flask billing dashboard..."
+    cd /home/scripts/billing && nohup python3 app.py > /var/log/slurm/flask.log 2>&1 &
+    sleep 1
+
     echo "[ENTRY] Controller ready."
 
     # Tail 日志保持容器运行
-    exec tail -f /var/log/slurm/slurmctld.log /var/log/slurm/slurmdbd.log
+    exec tail -f /var/log/slurm/slurmctld.log /var/log/slurm/slurmdbd.log /var/log/slurm/flask.log
     ;;
 
   worker)
     echo "[ENTRY] Role: WORKER"
 
-    # 挂载 NFS
+    # 挂载 NFS（soft 选项防止挂起）
     echo "[ENTRY] Mounting NFS shares..."
     sleep 3
-    mount -t nfs -o proto=tcp,port=2049,nolock 172.20.0.10:/home /home || echo "NFS /home mount failed (non-fatal)"
-    mount -t nfs -o proto=tcp,port=2049,nolock 172.20.0.10:/scratch /scratch || echo "NFS /scratch mount failed (non-fatal)"
+    mount -t nfs -o proto=tcp,port=2049,nolock,soft,timeo=5,retrans=1 172.20.0.10:/home /home 2>/dev/null || echo "NFS /home mount failed (non-fatal)"
+    mount -t nfs -o proto=tcp,port=2049,nolock,soft,timeo=5,retrans=1 172.20.0.10:/scratch /scratch 2>/dev/null || echo "NFS /scratch mount failed (non-fatal)"
 
     # 启动 slurmd
     echo "[ENTRY] Starting slurmd..."

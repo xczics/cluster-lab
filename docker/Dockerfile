@@ -83,7 +83,8 @@ RUN mkdir -p /var/{log,run,spool}/slurm \
 
 # 创建 slurm 用户（UID/GID 统一跨节点）
 RUN groupadd -r -g 64030 slurm \
-    && useradd -r -g slurm -u 64030 -s /bin/false slurm
+    && useradd -r -g slurm -u 64030 -s /bin/false slurm \
+    && mkdir -p /home/slurm && chown slurm:slurm /home/slurm && chmod 755 /home/slurm
 
 # 配置 Munge 密钥
 RUN mkdir -p /etc/munge \

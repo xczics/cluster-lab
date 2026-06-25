@@ -24,19 +24,22 @@ services:
       - "6817:6817"   # slurmctld
       - "6818:6818"   # slurmdbd
       - "6819:6819"   # slurmrestd
+      - "5050:5000"   # Flask billing
     volumes:
       - home_shared:/home
       - scratch_shared:/scratch
       - db_data:/var/lib/mysql
       - ../config/slurm/slurm.conf:/etc/slurm/slurm.conf:ro
+      - ../config/slurm/slurmdbd.conf:/etc/slurm/slurmdbd.conf:ro
       - ../config/slurm/cgroup.conf:/etc/slurm/cgroup.conf:ro
       - ../config/nfs/exports:/etc/exports:ro
+      - ../scripts/billing:/opt/billing:ro
     environment:
       - CLUSTER_ROLE=controller
       - SLURM_CLUSTER_NAME=cluster-lab
     networks:
       cluster-net:
-        ipv4_address: 172.20.0.2
+        ipv4_address: 172.20.0.10
     privileged: true
     cap_add:
       - SYS_ADMIN
@@ -57,7 +60,7 @@ services:
       - slurmctl
     networks:
       cluster-net:
-        ipv4_address: 172.20.0.3
+        ipv4_address: 172.20.0.11
     privileged: true
     cap_add:
       - SYS_ADMIN
@@ -78,7 +81,7 @@ services:
       - slurmctl
     networks:
       cluster-net:
-        ipv4_address: 172.20.0.4
+        ipv4_address: 172.20.0.12
     privileged: true
     cap_add:
       - SYS_ADMIN
