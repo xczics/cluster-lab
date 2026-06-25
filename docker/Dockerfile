@@ -7,6 +7,7 @@ LABEL maintainer="agent-yuan / zircon"
 ENV DEBIAN_FRONTEND=noninteractive
 ENV SLURM_VERSION=24.11.3
 ENV TZ=Europe/Copenhagen
+ENV MODULEPATH=/usr/share/modules/modulefiles
 
 # 系统依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -41,6 +42,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Python
     python3 \
     python3-pip \
+    # Environment Modules (Lmod)
+    lmod \
+    lua5.4 \
+    # SSH (for mpirun cross-node)
+    openssh-server \
+    # PMIx (for srun --mpi=pmix)
+    libpmix-dev \
     # OpenMPI
     openmpi-bin \
     libopenmpi-dev \
@@ -62,6 +70,7 @@ RUN set -ex \
         --with-munge=/usr \
         --with-mysql=/usr \
         --with-hdf5=no \
+        --with-pmix=/usr/lib/aarch64-linux-gnu/pmix2 \
     && make -j$(nproc) \
     && make install \
     && rm -rf /tmp/slurm-*
@@ -86,6 +95,23 @@ RUN mkdir -p /etc/munge \
 # 配置文件
 COPY config/slurm/slurmdbd.conf /etc/slurm/slurmdbd.conf
 RUN chmod 600 /etc/slurm/slurmdbd.conf
+
+# Lmod 环境模块
+COPY config/modulefiles /usr/share/modules/modulefiles
+RUN echo "source /usr/share/lmod/lmod/init/bash" >> /etc/bash.bashrc \
+    && echo "source /usr/share/lmod/lmod/init/bash" >> /etc/skel/.bashrc \
+    && echo "source /usr/share/lmod/lmod/init/bash" >> /root/.bashrc
+
+# SSH 配置（跨节点 MPI）
+RUN ssh-keygen -A \
+    && sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config \
+    && sed -i 's/^PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config \
+    && sed -i 's/^#PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config \
+    && sed -i 's/^PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config \
+    && mkdir -p /root/.ssh \
+    && ssh-keygen -t rsa -b 2048 -f /root/.ssh/id_rsa -N "" \
+    && cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys \
+    && chmod 600 /root/.ssh/authorized_keys
 
 # 启动脚本
 COPY docker/entrypoint.sh /entrypoint.sh

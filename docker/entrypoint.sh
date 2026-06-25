@@ -5,6 +5,11 @@ set -e
 
 # --- 通用初始化 ---
 
+# 启动 SSH（跨节点 MPI 通信）
+echo "[ENTRY] Starting SSH..."
+/usr/sbin/sshd -D &
+sleep 1
+
 # 确保 Munge 运行
 echo "[ENTRY] Starting Munge..."
 mkdir -p /run/munge
