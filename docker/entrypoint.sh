@@ -14,7 +14,7 @@ sudo -u munge /usr/sbin/munged || true
 sleep 1
 
 # 确保 Slurm 目录存在
-mkdir -p /var/run/slurm /var/spool/slurm /var/spool/slurm/d /var/log/slurm
+mkdir -p /var/run/slurm /var/spool/slurmd /var/spool/slurm/d /var/log/slurm
 chown -R slurm:slurm /var/{run,spool,log}/slurm
 
 # --- 按角色启动服务 ---
@@ -71,8 +71,8 @@ case "${CLUSTER_ROLE}" in
     # 挂载 NFS
     echo "[ENTRY] Mounting NFS shares..."
     sleep 3
-    mount -t nfs -o proto=tcp,port=2049 172.20.0.2:/home /home || echo "NFS /home mount failed (non-fatal)"
-    mount -t nfs -o proto=tcp,port=2049 172.20.0.2:/scratch /scratch || echo "NFS /scratch mount failed (non-fatal)"
+    mount -t nfs -o proto=tcp,port=2049,nolock 172.20.0.2:/home /home || echo "NFS /home mount failed (non-fatal)"
+    mount -t nfs -o proto=tcp,port=2049,nolock 172.20.0.2:/scratch /scratch || echo "NFS /scratch mount failed (non-fatal)"
 
     # 启动 slurmd
     echo "[ENTRY] Starting slurmd..."

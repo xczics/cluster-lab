@@ -41,6 +41,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Python
     python3 \
     python3-pip \
+    # OpenMPI
+    openmpi-bin \
+    libopenmpi-dev \
+    # slurmrestd 依赖
+    libhttp-parser-dev \
+    libjson-c-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # 下载并编译 Slurm
@@ -72,10 +78,14 @@ RUN groupadd -r -g 64030 slurm \
 
 # 配置 Munge 密钥
 RUN mkdir -p /etc/munge \
-    && /usr/sbin/create-munge-key -f \
+    && /usr/sbin/mungekey --force \
     && chown -R munge:munge /etc/munge \
     && chmod 0700 /etc/munge \
     && chmod 0400 /etc/munge/munge.key
+
+# 配置文件
+COPY config/slurm/slurmdbd.conf /etc/slurm/slurmdbd.conf
+RUN chmod 600 /etc/slurm/slurmdbd.conf
 
 # 启动脚本
 COPY docker/entrypoint.sh /entrypoint.sh
