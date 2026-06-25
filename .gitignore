@@ -25,3 +25,6 @@ Thumbs.db
 # Temp
 tmp/
 temp/
+
+# Tutorial (private, for internal use only)
+tutorial-*.md
