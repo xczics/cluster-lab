@@ -1,0 +1,3 @@
+# NFS exports for Cluster-Lab
+/home       172.20.0.0/16(rw,sync,no_subtree_check,no_root_squash)
+/scratch    172.20.0.0/16(rw,sync,no_subtree_check,no_root_squash)

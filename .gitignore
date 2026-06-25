@@ -1,0 +1,27 @@
+# Docker
+docker-compose*.override.yml
+.docker/
+
+# Secrets
+.secrets/
+*.key
+**/secrets/
+
+# Build artifacts
+*.tar.bz2
+*.tar.gz
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temp
+tmp/
+temp/
