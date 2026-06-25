@@ -1,0 +1,38 @@
+---
+# Cluster-Lab Ansible Inventory
+# ==============================
+# Three-node Slurm cluster running inside Docker Compose.
+#
+# Usage:
+#   ansible-playbook -i inventory.yml site.yml
+#   ansible all -i inventory.yml -m ping
+
+all:
+  children:
+    slurm_cluster:
+      children:
+        controllers:
+          hosts:
+            slurmctl:
+              ansible_host: 172.20.0.10
+              slurm_node: slurmctl
+              slurm_role: controller
+        compute:
+          hosts:
+            node01:
+              ansible_host: 172.20.0.11
+              slurm_node: node01
+              slurm_role: worker
+            node02:
+              ansible_host: 172.20.0.12
+              slurm_node: node02
+              slurm_role: worker
+
+  vars:
+    ansible_user: root
+    ansible_connection: ssh
+    ansible_ssh_private_key_file: ~/.ssh/id_ed25519
+    slurm_version: "24.11.3"
+    cluster_name: "cluster-lab"
+    network_subnet: "172.20.0.0/24"
+    nfs_export_dir: "/home"

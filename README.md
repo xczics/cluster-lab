@@ -156,13 +156,17 @@ Hello from MPI process 0 of 2 on node01
 | 3 | **Multi-user environment** | `scripts/setup_users.sh` (alice/bob/charlie) | ✅ `bash /home/scripts/setup_users.sh` |
 | 4 | **Slurm QoS** | `config/slurm/qos_partitions.conf`, `scripts/setup_qos.sh` (high/normal/low) | ✅ `bash /home/scripts/setup_qos.sh` |
 | 5 | **GRES GPU simulation** | `config/slurm/gres.conf` + `tests/check_gpu.c` | ✅ 4 fake GPUs per node |
+| 6 | **Job array & dependency templates** | `scripts/jobs/job_array.sbatch`, `job_deps.sbatch` | ✅ `sbatch --array=1-10` / `sbatch --dependency=afterok:$JOBID` |
+| 7 | **Container multi-stage build** | `docker/Dockerfile.multistage` | ✅ ~1.5GB → ~600-800MB |
+| 8 | **Ansible automation** | `ansible/site.yml` + inventory.yml | ✅ `ansible-playbook -i ansible/inventory.yml ansible/site.yml` |
+| 9 | **Cluster health monitoring** | `scripts/monitoring/cluster_health.sh` | ✅ `bash scripts/monitoring/cluster_health.sh` |
 
-## Next Steps (Planned)
+## Next Steps (Stretch)
 
-- [ ] Monitoring & log aggregation
-- [ ] Container image optimization (multi-stage build)
-- [ ] Ansible/Salt automation for deployment
-- [ ] Job dependency and array job examples
+- [ ] Prometheus + Grafana dashboard
+- [ ] CI/CD with GitHub Actions
+- [ ] Docker Hub image publishing
+- [ ] Production Munge authentication
 
 ## License
 

@@ -1,0 +1,155 @@
+---
+# Cluster-Lab Deployment Playbook
+# ================================
+# Automates configuration of the three-node Slurm cluster.
+#
+# Requirements:
+#   - Docker containers running (built from docker/Dockerfile.multistage)
+#   - SSH keys configured between nodes
+#
+# Usage:
+#   ansible-playbook -i inventory.yml site.yml
+#
+# Selective runs:
+#   ansible-playbook -i inventory.yml site.yml --tags=slurm
+#   ansible-playbook -i inventory.yml site.yml --tags=monitoring
+
+- name: Bootstrap — Verify cluster connectivity
+  hosts: all
+  gather_facts: yes
+  tags: [bootstrap, always]
+
+  tasks:
+    - name: Check if running inside Docker container
+      shell: |
+        if [ -f /.dockerenv ]; then echo "docker"; else echo "bare"; fi
+      register: runtime_env
+      changed_when: false
+
+    - name: Set runtime environment fact
+      set_fact:
+        runtime_env: "{{ runtime_env.stdout }}"
+
+    - name: Report runtime environment
+      debug:
+        msg: "{{ inventory_hostname }} runtime: {{ runtime_env.stdout }}"
+
+
+- name: Slurm Configuration
+  hosts: all
+  tags: [slurm]
+
+  tasks:
+    - name: Ensure slurm config directory exists
+      file:
+        path: /etc/slurm
+        state: directory
+        mode: '0755'
+
+    - name: Deploy slurm.conf
+      copy:
+        src: "{{ playbook_dir }}/../config/slurm/slurm.conf"
+        dest: /etc/slurm/slurm.conf
+        mode: '0644'
+      notify: restart slurm
+
+    - name: Deploy cgroup.conf
+      copy:
+        src: "{{ playbook_dir }}/../config/slurm/cgroup.conf"
+        dest: /etc/slurm/cgroup.conf
+        mode: '0644'
+      notify: restart slurm
+
+    - name: Ensure Slurm directories exist
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: slurm
+        group: slurm
+        mode: '0755'
+      loop:
+        - /var/log/slurm
+        - /var/spool/slurm
+        - /var/spool/slurmd
+
+    - name: Start Munge service
+      service:
+        name: munge
+        state: started
+        enabled: yes
+      ignore_errors: yes
+
+  handlers:
+    - name: restart slurm
+      shell: |
+        if command -v slurmctld &>/dev/null && hostname | grep -q slurmctl; then
+          slurmctld -i || slurmctld
+        elif command -v slurmd &>/dev/null && hostname | grep -q node; then
+          slurmd
+        fi
+      listen: restart slurm
+
+
+- name: NFS Setup
+  hosts: controllers
+  tags: [nfs]
+
+  tasks:
+    - name: Ensure NFS server is running
+      service:
+        name: nfs-kernel-server
+        state: started
+        enabled: yes
+      ignore_errors: yes
+
+    - name: Deploy exports
+      copy:
+        content: "/home *(rw,sync,no_subtree_check,no_root_squash)\n"
+        dest: /etc/exports
+        mode: '0644'
+
+    - name: Export NFS shares
+      command: exportfs -ra
+      changed_when: true
+      ignore_errors: yes
+
+
+- name: Monitoring Setup
+  hosts: all
+  tags: [monitoring]
+
+  tasks:
+    - name: Create monitoring directory
+      file:
+        path: /opt/cluster-lab/monitoring
+        state: directory
+        mode: '0755'
+
+    - name: Deploy cluster health script
+      copy:
+        src: "{{ playbook_dir }}/../scripts/monitoring/cluster_health.sh"
+        dest: /opt/cluster-lab/monitoring/cluster_health.sh
+        mode: '0755'
+
+    - name: Deploy logrotate for Slurm logs
+      copy:
+        content: |
+          /var/log/slurm/*.log {
+            daily
+            rotate 7
+            compress
+            delaycompress
+            missingok
+            notifempty
+            copytruncate
+          }
+        dest: /etc/logrotate.d/slurm
+        mode: '0644'
+
+    - name: Set up cron job for cluster health check (every 5 min)
+      cron:
+        name: "cluster-lab health check"
+        minute: "*/5"
+        job: "/opt/cluster-lab/monitoring/cluster_health.sh > /var/log/cluster-health.log 2>&1"
+        state: present
+      ignore_errors: yes

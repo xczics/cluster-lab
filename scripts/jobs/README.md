@@ -23,6 +23,8 @@ cat hello_mpi_<jobid>.out
 |----------|------|-------|-------------|
 | `hello_mpi.sbatch` | MPI | 2 | Cross-node MPI Hello World via PMIx |
 | `hello_openmp.sbatch` | OpenMP | 1 | Shared-memory OpenMP with 4 threads |
+| `job_array.sbatch` | Array | 1 | Job array — submit with `sbatch --array=1-10` |
+| `job_deps.sbatch` | Dependency | 1 | Job dependency chain — `afterok`, `afternotok`, `afterany` |
 
 ## Tips
 

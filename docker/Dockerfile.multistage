@@ -1,0 +1,167 @@
+# =============================================================================
+# Multi-Stage Dockerfile — Cluster-Lab
+# =============================================================================
+# Build stage: compiles Slurm and MPI from source with full build toolchain
+# Runtime stage: copies only the required binaries + libraries into a slim image
+# Expected size: 1.5GB → ~600-800MB
+#
+# Usage:
+#   docker build -f docker/Dockerfile.multistage -t cluster-lab:multistage .
+# =============================================================================
+
+# ---- Build stage ------------------------------------------------------------
+FROM ubuntu:24.04 AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV SLURM_VERSION=24.11.3
+
+# Build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    g++ \
+    gfortran \
+    make \
+    cmake \
+    pkg-config \
+    curl \
+    bzip2 \
+    lz4 \
+    liblz4-dev \
+    libssl-dev \
+    libzstd-dev \
+    libcurl4-openssl-dev \
+    libpam0g-dev \
+    libreadline-dev \
+    libncurses-dev \
+    libmunge-dev \
+    libjansson-dev \
+    libhttp-parser-dev \
+    libdbus-1-dev \
+    libgtk2.0-dev \
+    libfreeipmi-dev \
+    libipmimonitoring-dev \
+    libyaml-dev \
+    librrd-dev \
+    libhdf5-dev \
+    python3-dev \
+    libpmix-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and build Slurm
+WORKDIR /tmp/slurm-build
+RUN curl -fsSL "https://download.schedmd.com/slurm/slurm-${SLURM_VERSION}.tar.bz2" \
+    -o slurm.tar.bz2 && \
+    tar xf slurm.tar.bz2 --strip-components=1 && \
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc/slurm \
+        --with-munge=/usr \
+        --with-hdf5=no \
+        --with-rrd=no \
+        --with-freeipmi=no \
+        --with-gtk=no \
+        --with-dbus=no \
+        --with-pmix=/usr \
+        --enable-slurmrestd=no \
+    && make -j$(nproc) && make install DESTDIR=/tmp/slurm-install
+
+# ---- OpenMPI build ----------------------------------------------------------
+FROM ubuntu:24.04 AS openmpi-builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV OPENMPI_VERSION=4.1.6
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential gcc g++ gfortran make curl bzip2 file \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /tmp/openmpi-build
+RUN curl -fsSL "https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-${OPENMPI_VERSION}.tar.bz2" \
+    -o openmpi.tar.bz2 && \
+    tar xf openmpi.tar.bz2 --strip-components=1 && \
+    ./configure --prefix=/usr/local/lib/openmpi --enable-mpi-fortran=yes && \
+    make -j$(nproc) && make install DESTDIR=/tmp/openmpi-install
+
+# ---- Runtime stage ----------------------------------------------------------
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Asia/Shanghai
+
+LABEL description="Cluster-Lab Slurm node (multi-stage build)"
+LABEL version="24.11.3-multistage"
+
+# === Minimal runtime dependencies ===
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Slurm runtime libs
+    libmunge2 libjansson4 liblz4-1 libzstd1 libcurl4 libreadline8 \
+    libncurses6 libhttp-parser2.9 libpam0g libpmix2 \
+    # NFS server
+    nfs-kernel-server nfs-common \
+    # SSH
+    openssh-server openssh-client \
+    # Lmod / module system
+    lmod \
+    # Tools
+    vim-tiny less netcat-openbsd iputils-ping procps psmisc \
+    sudo python3 rsync \
+    # MariaDB client (for slurmdbd)
+    mariadb-server mariadb-client \
+    # Testing
+    file gawk bc \
+    && rm -rf /var/lib/apt/lists/*
+
+# === Copy Slurm from builder ===
+COPY --from=builder /tmp/slurm-install/usr/ /usr/
+COPY --from=builder /tmp/slurm-install/etc/slurm/ /etc/slurm/
+COPY --from=builder /tmp/slurm-install/etc/init.d/ /etc/init.d/
+COPY --from=builder /tmp/slurm-install/etc/default/ /etc/default/
+
+# === Copy OpenMPI from openmpi-builder ===
+COPY --from=openmpi-builder /tmp/openmpi-install/usr/local/lib/openmpi/ /usr/local/lib/openmpi/
+
+# === Environment ===
+ENV PATH=/usr/local/lib/openmpi/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV LD_LIBRARY_PATH=/usr/local/lib/openmpi/lib
+ENV MODULEPATH=/usr/local/modulefiles
+
+# === Munge key ===
+RUN mkdir -p /etc/munge && \
+    dd if=/dev/urandom bs=1 count=1024 2>/dev/null | \
+    openssl enc -a -A 2>/dev/null | head -c 1024 > /etc/munge/munge.key && \
+    chmod 400 /etc/munge/munge.key && \
+    chown munge:munge /etc/munge/munge.key
+
+# === SSH key ===
+RUN mkdir -p /root/.ssh && \
+    ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N '' && \
+    ssh-keygen -t rsa -b 2048 -f /etc/ssh/ssh_host_rsa_key -N '' && \
+    ssh-keygen -t ed25519 -f /root/.ssh/id_ed25519 -N '' && \
+    cat /root/.ssh/id_ed25519.pub >> /root/.ssh/authorized_keys && \
+    chmod 700 /root/.ssh && chmod 600 /root/.ssh/authorized_keys
+
+# === Create standard users ===
+RUN groupadd -g 1001 hpcusers && \
+    useradd -m -s /bin/bash -u 1001 -g hpcusers user01 && \
+    useradd -m -s /bin/bash -u 1002 -g hpcusers user02 && \
+    useradd -m -s /bin/bash -u 1003 -g hpcusers user03
+
+# === NFS exports ===
+RUN mkdir -p /home && \
+    echo "/home *(rw,sync,no_subtree_check,no_root_squash)" > /etc/exports
+
+# === Config directories ===
+RUN mkdir -p /var/log/slurm /var/spool/slurm /var/run/munge && \
+    chown -R slurm:slurm /var/log/slurm /var/spool/slurm && \
+    chown -R munge:munge /var/run/munge
+
+# === MariaDB setup ===
+RUN mkdir -p /var/run/mysqld /var/lib/mysql && \
+    chown -R mysql:mysql /var/run/mysqld /var/lib/mysql
+
+# === Entrypoint ===
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
