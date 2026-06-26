@@ -159,14 +159,14 @@ TEMPLATE = r"""<!DOCTYPE html>
 </head>
 <body>
     <div class="header">
-        <h1>🖥️ Cluster-Lab 计费系统</h1>
-        <p>Slurm HPC 集群 · 作业计费与用量查询</p>
+        <h1>🖥️ Cluster-Lab Billing System</h1>
+        <p>Slurm HPC Cluster · Job Billing &amp; Usage</p>
     </div>
     <div class="container">
         <div class="nav-links">
-            <a href="/">📊 仪表盘</a>
+            <a href="/">📊 Dashboard</a>
             <a href="/jobs">📋 Jobs History</a>
-            <a href="/usage">📈 用量统计</a>
+            <a href="/usage">📈 Usage</a>
             <a href="/api/jobs" target="_blank">🔗 API</a>
         </div>
 
@@ -204,11 +204,11 @@ DASHBOARD_TEMPLATE = TEMPLATE + r"""
     <h2>Recent Jobs</h2>
     <div class="form-row">
         <form method="get" action="/">
-            <label>显示最近
+            <label>Show last
                 <select name="hours" onchange="this.form.submit()">
-                    <option value="1" {% if hours == 1 %}selected{% endif %}>1 小时</option>
-                    <option value="6" {% if hours == 6 %}selected{% endif %}>6 小时</option>
-                    <option value="24" {% if hours == 24 %}selected{% endif %}>24 小时</option>
+                    <option value="1" {% if hours == 1 %}selected{% endif %}>1 hour</option>
+                    <option value="6" {% if hours == 6 %}selected{% endif %}>6 hours</option>
+                    <option value="24" {% if hours == 24 %}selected{% endif %}>24 hours</option>
                     <option value="168" {% if hours == 168 %}selected{% endif %}>7 天</option>
                     <option value="720" {% if hours == 720 %}selected{% endif %}>30 天</option>
                 </select>
@@ -220,12 +220,12 @@ DASHBOARD_TEMPLATE = TEMPLATE + r"""
         <thead>
             <tr>
                 <th>JobID</th>
-                <th>名称</th>
+                <th>Name</th>
                 <th>User</th>
                 <th>Partition</th>
                 <th>Node</th>
                 <th>CPU</th>
-                <th>时长</th>
+                <th>Duration</th>
                 <th>Status</th>
                 <th>Cost</th>
             </tr>
@@ -296,14 +296,14 @@ JOBS_TEMPLATE = TEMPLATE + r"""
         <thead>
             <tr>
                 <th>JobID</th>
-                <th>名称</th>
+                <th>Name</th>
                 <th>User</th>
                 <th>Partition</th>
                 <th>QoS</th>
                 <th>Node</th>
                 <th>CPU</th>
                 <th>Submit Time</th>
-                <th>时长</th>
+                <th>Duration</th>
                 <th>Status</th>
                 <th>Cost</th>
             </tr>
@@ -344,7 +344,7 @@ USAGE_TEMPLATE = TEMPLATE + r"""
                 <th>User</th>
                 <th>Jobs</th>
                 <th>Total CPU Hours</th>
-                <th>总Cost</th>
+                <th>Total Cost</th>
             </tr>
         </thead>
         <tbody>
@@ -417,9 +417,10 @@ def calculate_cost(ncpus, elapsed_seconds, qos="normal"):
 
 
 def get_slurm_version():
-    """获取 Slurm 版本"""
+    """获取 Slurm 版本号（不含 slurm 前缀）"""
     out = run_cmd("sinfo -V 2>/dev/null")
-    return out.strip() if out else "N/A"
+    version = out.strip() if out else "N/A"
+    return version.replace("slurm ", "").strip()
 
 
 def get_node_info():
