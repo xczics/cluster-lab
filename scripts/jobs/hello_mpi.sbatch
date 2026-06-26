@@ -10,8 +10,8 @@
 #SBATCH --partition=normal
 #SBATCH --mpi=pmix
 
-# Load modules
-module load gcc/13.3.0 openmpi/4.1.6
+# Load modules (自动加载 gcc + openmpi 依赖)
+module load mpi-test/1.0
 
 echo "Running MPI Hello World on $(scontrol show hostname)"
 echo "SLURM_NODELIST: $SLURM_NODELIST"
@@ -19,8 +19,8 @@ echo "SLURM_NNODES: $SLURM_NNODES"
 echo "SLURM_NTASKS: $SLURM_NTASKS"
 echo "---"
 
-# Run MPI program via srun
-srun /home/hello_mpi
+# Run MPI program via srun with PMIx
+srun --mpi=pmix hello_mpi
 
 echo "---"
 echo "Job complete!"

@@ -13,3 +13,5 @@ prepend_path("PATH", pathJoin(pkgdir, "bin"))
 
 setenv("MPI_TEST_DIR", pkgdir)
 setenv("MPI_HELLO", pathJoin(pkgdir, "bin/hello_mpi"))
+setenv("MPI_RUN", "srun --mpi=pmix")
+setenv("MPI_RUN_HELLO", "srun --mpi=pmix hello_mpi")
