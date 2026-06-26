@@ -75,6 +75,7 @@ services:
       - scratch_shared:/scratch
       - ../config/slurm/slurm.conf:/etc/slurm/slurm.conf:ro
       - ../config/slurm/cgroup.conf:/etc/slurm/cgroup.conf:ro
+      - ../config/slurm/gres.conf:/etc/slurm/gres.conf:ro
     environment:
       - CLUSTER_ROLE=worker
     depends_on:
@@ -86,3 +87,24 @@ services:
     cap_add:
       - SYS_ADMIN
       - SYS_NICE
+
+  login:
+    hostname: login
+    container_name: login
+    image: cluster-lab:latest
+    ports:
+      - "2222:22"       # SSH for user login
+    volumes:
+      - home_shared:/home
+      - ../config/slurm/slurm.conf:/etc/slurm/slurm.conf:ro
+      - ../config/slurm/cgroup.conf:/etc/slurm/cgroup.conf:ro
+    environment:
+      - CLUSTER_ROLE=login
+    depends_on:
+      - slurmctl
+    networks:
+      cluster-net:
+        ipv4_address: 172.20.0.13
+    privileged: true
+    cap_add:
+      - SYS_ADMIN

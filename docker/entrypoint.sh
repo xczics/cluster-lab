@@ -116,9 +116,31 @@ case "${CLUSTER_ROLE}" in
     exec tail -f /var/log/slurm/slurmd.log
     ;;
 
+  login)
+    echo "[ENTRY] Role: LOGIN NODE"
+
+    # 挂载 NFS /home
+    echo "[ENTRY] Mounting NFS /home..."
+    sleep 3
+    mount -t nfs -o proto=tcp,port=2049,nolock,soft,timeo=5,retrans=1 172.20.0.10:/home /home 2>/dev/null || echo "NFS /home mount failed (non-fatal)"
+
+    # SSH 已经由公共 init 启动
+    # Munge 已经由公共 init 启动
+    # 不启动 slurmd / slurmctld — 仅作登录和提交作业
+
+    echo "[ENTRY] Login node ready."
+    echo "[ENTRY] Users can SSH in (user01/user02/user03) and run: sbatch, sinfo, squeue"
+
+    # 保活：每 10 秒打印一次概要
+    while true; do
+      sleep 60
+      echo "[LOGIN] $(date '+%Y-%m-%d %H:%M:%S') — sinfo: $(sinfo -o '%P %D %t' --noheader 2>/dev/null | tr '\n' ' ')"
+    done
+    ;;
+
   *)
     echo "[ENTRY] Unknown role: ${CLUSTER_ROLE}"
-    echo "Usage: CLUSTER_ROLE=controller|worker"
+    echo "Usage: CLUSTER_ROLE=controller|worker|login"
     exec bash
     ;;
 esac
