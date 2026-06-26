@@ -32,6 +32,8 @@ services:
       - ../config/slurm/slurm.conf:/etc/slurm/slurm.conf:ro
       - ../config/slurm/slurmdbd.conf:/etc/slurm/slurmdbd.conf:ro
       - ../config/slurm/cgroup.conf:/etc/slurm/cgroup.conf:ro
+      - ../config/munge.key:/etc/munge/munge.key:ro
+      - ../config/slurm/gres.conf:/etc/slurm/gres.conf:ro
       - ../config/nfs/exports:/etc/exports:ro
       - ../scripts/billing:/opt/billing:ro
     environment:
@@ -54,6 +56,8 @@ services:
       - scratch_shared:/scratch
       - ../config/slurm/slurm.conf:/etc/slurm/slurm.conf:ro
       - ../config/slurm/cgroup.conf:/etc/slurm/cgroup.conf:ro
+      - ../config/munge.key:/etc/munge/munge.key:ro
+      - ../config/slurm/gres.conf:/etc/slurm/gres.conf:ro
     environment:
       - CLUSTER_ROLE=worker
     depends_on:
@@ -75,6 +79,7 @@ services:
       - scratch_shared:/scratch
       - ../config/slurm/slurm.conf:/etc/slurm/slurm.conf:ro
       - ../config/slurm/cgroup.conf:/etc/slurm/cgroup.conf:ro
+      - ../config/munge.key:/etc/munge/munge.key:ro
       - ../config/slurm/gres.conf:/etc/slurm/gres.conf:ro
     environment:
       - CLUSTER_ROLE=worker
@@ -98,6 +103,8 @@ services:
       - home_shared:/home
       - ../config/slurm/slurm.conf:/etc/slurm/slurm.conf:ro
       - ../config/slurm/cgroup.conf:/etc/slurm/cgroup.conf:ro
+      - ../config/munge.key:/etc/munge/munge.key:ro
+      - ../config/slurm/gres.conf:/etc/slurm/gres.conf:ro
     environment:
       - CLUSTER_ROLE=login
     depends_on:
