@@ -36,11 +36,22 @@ mkdir -p /run/sshd
 sleep 1
 
 # 确保 Munge 运行
+# 注意：munge.key 是通过只读挂载的（root:root, 400），
+# munged 强制要求 key 安全权限（仅属主可读）。
+# 因此复制到临时位置并修正所有权后启动。
 echo "[ENTRY] Starting Munge..."
 mkdir -p /run/munge
 chown munge:munge /run/munge
 chmod 755 /run/munge
-sudo -u munge /usr/sbin/munged --num-threads=10 || true
+if [ -f /etc/munge/munge.key ]; then
+  cp -a /etc/munge/munge.key /run/munge/munge.key
+  chown munge:munge /run/munge/munge.key
+  chmod 400 /run/munge/munge.key
+  sudo -u munge /usr/sbin/munged --key-file /run/munge/munge.key --num-threads=10 || true
+else
+  # 没有 key 文件时也尝试启动（可能无认证模式？）
+  sudo -u munge /usr/sbin/munged --num-threads=10 || true
+fi
 sleep 1
 
 # 确保 slurm 用户 home 目录存在
