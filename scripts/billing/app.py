@@ -15,12 +15,10 @@ from flask import Flask, render_template_string, request, jsonify
 app = Flask(__name__)
 
 # ── 计费费率 ──
-# 每 CPU 每小时的价格（单位：元/核时）
-# 按不同 QoS 区分
+# 每 CPU 每小时的价格（单位：Kr/核时）
 RATES = {
-    "high":   1.0,   # 高优先级：1.0 元/核时
-    "normal": 0.5,   # 普通：0.5 元/核时
-    "low":    0.2,   # 低优先级：0.2 元/核时
+    "normal": 1.0,    # normal 队列：1.0 Kr/核时
+    "debug":  0.05,   # debug  队列：0.05 Kr/核时
 }
 
 # ── HTML 模板 ──
@@ -436,6 +434,7 @@ def get_node_info():
         if len(parts) < 6:
             continue
         name = parts[0].strip()
+        partition = parts[2].strip().rstrip("*")
         cpu_str = parts[5].strip()
         try:
             cpu_parts = cpu_str.split("/")
@@ -446,12 +445,18 @@ def get_node_info():
             seen[name] = {
                 "name": name,
                 "state": parts[1].strip(),
-                "partition": parts[2].strip(),
+                "partition": partition,
                 "mem_free": int(parts[3]) if parts[3].strip().isdigit() else 0,
                 "mem_total": int(parts[4]) if parts[4].strip().isdigit() else 0,
                 "mem_used": int(parts[4]) - int(parts[3]) if parts[3].strip().isdigit() and parts[4].strip().isdigit() else 0,
                 "cpus": total_cpus,
             }
+        else:
+            # Merge partitions for nodes in multiple partitions
+            existing = seen[name]
+            existing_partitions = existing["partition"].split(", ")
+            if partition not in existing_partitions:
+                existing["partition"] = ", ".join(existing_partitions + [partition])
     return list(seen.values())
 
 
