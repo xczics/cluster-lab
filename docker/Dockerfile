@@ -97,7 +97,13 @@ RUN mkdir -p /etc/munge \
 COPY config/slurm/slurmdbd.conf /etc/slurm/slurmdbd.conf
 RUN chmod 600 /etc/slurm/slurmdbd.conf
 
-# Lmod 环境模块
+# Lmod 环境模块（SSH 登录 shell 不继承 Docker ENV，需多重路径）
+ENV MODULEPATH=/usr/share/modules/modulefiles
+# /etc/lmod/modulespath: lmod.sh 有此文件则读取，加入 MODULEPATH
+# /etc/environment: SSH PAM 读取此文件设环境变量
+RUN mkdir -p /etc/lmod \
+    && echo "/usr/share/modules/modulefiles" > /etc/lmod/modulespath \
+    && echo "MODULEPATH=/usr/share/modules/modulefiles" >> /etc/environment
 COPY config/modulefiles /usr/share/modules/modulefiles
 RUN echo "source /usr/share/lmod/lmod/init/bash" >> /etc/bash.bashrc \
     && echo "source /usr/share/lmod/lmod/init/bash" >> /etc/skel/.bashrc \
