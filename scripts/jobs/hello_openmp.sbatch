@@ -4,7 +4,7 @@
 #SBATCH --error=hello_openmp_%j.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=2
 #SBATCH --time=00:05:00
 #SBATCH --partition=normal
 
@@ -12,7 +12,7 @@
 module load gcc/13.3.0
 
 # Set OpenMP threads
-export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-4}
+export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-2}
 
 echo "Running OpenMP Hello World"
 echo "OMP_NUM_THREADS: $OMP_NUM_THREADS"

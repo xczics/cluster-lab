@@ -25,6 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     cmake \
     pkg-config \
     curl \
+    ca-certificates \
     bzip2 \
     lz4 \
     liblz4-dev \
@@ -62,7 +63,7 @@ RUN curl -fsSL "https://download.schedmd.com/slurm/slurm-${SLURM_VERSION}.tar.bz
         --with-freeipmi=no \
         --with-gtk=no \
         --with-dbus=no \
-        --with-pmix=/usr \
+        --with-pmix=no \
         --enable-slurmrestd=no \
     && make -j$(nproc) && make install DESTDIR=/tmp/slurm-install
 
@@ -73,7 +74,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV OPENMPI_VERSION=4.1.6
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential gcc g++ gfortran make curl bzip2 file \
+    build-essential gcc g++ gfortran make curl ca-certificates bzip2 file \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /tmp/openmpi-build
@@ -113,10 +114,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # === Copy Slurm from builder ===
+# Slurm config files (slurm.conf, slurmdbd.conf) are mounted via docker-compose volumes,
+# not built-in. So we only copy binaries and libraries.
 COPY --from=builder /tmp/slurm-install/usr/ /usr/
-COPY --from=builder /tmp/slurm-install/etc/slurm/ /etc/slurm/
-COPY --from=builder /tmp/slurm-install/etc/init.d/ /etc/init.d/
-COPY --from=builder /tmp/slurm-install/etc/default/ /etc/default/
 
 # === Copy OpenMPI from openmpi-builder ===
 COPY --from=openmpi-builder /tmp/openmpi-install/usr/local/lib/openmpi/ /usr/local/lib/openmpi/
