@@ -103,6 +103,16 @@ RUN echo "source /usr/share/lmod/lmod/init/bash" >> /etc/bash.bashrc \
     && echo "source /usr/share/lmod/lmod/init/bash" >> /etc/skel/.bashrc \
     && echo "source /usr/share/lmod/lmod/init/bash" >> /root/.bashrc
 
+# MPI 测试程序（编译并安装为公共软件）
+COPY scripts/jobs/hello_mpi.c /usr/local/src/hello_mpi.c
+RUN mkdir -p /usr/local/mpi-test/1.0/bin \
+    && cd /usr/local/src \
+    && . /usr/share/lmod/lmod/init/bash \
+    && module load gcc/13.3.0 openmpi/4.1.6 \
+    && mpicc -o hello_mpi hello_mpi.c \
+    && cp hello_mpi /usr/local/mpi-test/1.0/bin/ \
+    && rm -f hello_mpi hello_mpi.c
+
 # SSH 配置（跨节点 MPI）
 RUN ssh-keygen -A \
     && sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config \
