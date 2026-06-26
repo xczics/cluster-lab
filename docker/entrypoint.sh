@@ -16,6 +16,12 @@ for user in $HPC_USERS; do
     echo "$user:$HPC_PASS" | chpasswd
     echo "[ENTRY] Created user $user (password: $HPC_PASS)"
   fi
+  # 修复 NFS 家目录权限（useradd -m 通过 NFS 可能未正确设置 owner）
+  home_dir=$(getent passwd "$user" | cut -d: -f6)
+  if [ -d "$home_dir" ] && [ "$(stat -c '%u' "$home_dir" 2>/dev/null || echo '-1')" != "$(id -u "$user")" ]; then
+    chown -R "$user:hpcusers" "$home_dir" 2>/dev/null
+    echo "[ENTRY] Fixed home dir ownership for $user"
+  fi
 done
 
 # 启用 SSH 密码认证（镜像默认可能关闭）
