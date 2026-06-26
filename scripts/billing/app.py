@@ -2,8 +2,8 @@
 """
 Cluster-Lab Billing Dashboard
 =============================
-Slurm 计费系统网页查询界面。
-查询 sacct 作业历史、计算费用、展示集群状态。
+Slurm billing web interface。
+查询 sacct Jobs History、计算Cost、展示集群Status。
 """
 
 import subprocess
@@ -15,7 +15,7 @@ from flask import Flask, render_template_string, request, jsonify
 app = Flask(__name__)
 
 # ── 计费费率 ──
-# 每 CPU 核心每小时的价格（单位：元/核时）
+# 每 CPU 每小时的价格（单位：元/核时）
 # 按不同 QoS 区分
 RATES = {
     "high":   1.0,   # 高优先级：1.0 元/核时
@@ -25,11 +25,11 @@ RATES = {
 
 # ── HTML 模板 ──
 TEMPLATE = r"""<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cluster-Lab 计费系统</title>
+    <title>Cluster-Lab Billing</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -167,7 +167,7 @@ TEMPLATE = r"""<!DOCTYPE html>
     <div class="container">
         <div class="nav-links">
             <a href="/">📊 仪表盘</a>
-            <a href="/jobs">📋 作业历史</a>
+            <a href="/jobs">📋 Jobs History</a>
             <a href="/usage">📈 用量统计</a>
             <a href="/api/jobs" target="_blank">🔗 API</a>
         </div>
@@ -186,24 +186,24 @@ DASHBOARD_TEMPLATE = TEMPLATE + r"""
 <div class="stats-grid">
     <div class="stat-card blue">
         <div class="value">{{ stats.nodes_online }}</div>
-        <div class="label">在线节点</div>
+        <div class="label">Online Nodes</div>
     </div>
     <div class="stat-card green">
         <div class="value">{{ stats.jobs_completed }}</div>
-        <div class="label">已完成作业</div>
+        <div class="label">Jobs Done</div>
     </div>
     <div class="stat-card gold">
         <div class="value">{{ stats.total_cost }} 元</div>
-        <div class="label">总计费</div>
+        <div class="label">Total Cost</div>
     </div>
     <div class="stat-card">
         <div class="value">{{ stats.total_cpu_hours }} h</div>
-        <div class="label">总 CPU 时</div>
+        <div class="label">Total CPU Hours</div>
     </div>
 </div>
 
 <div class="section">
-    <h2>近期作业</h2>
+    <h2>Recent Jobs</h2>
     <div class="form-row">
         <form method="get" action="/">
             <label>显示最近
@@ -223,13 +223,13 @@ DASHBOARD_TEMPLATE = TEMPLATE + r"""
             <tr>
                 <th>JobID</th>
                 <th>名称</th>
-                <th>用户</th>
-                <th>分区</th>
-                <th>节点</th>
+                <th>User</th>
+                <th>Partition</th>
+                <th>Node</th>
                 <th>CPU</th>
                 <th>时长</th>
-                <th>状态</th>
-                <th>费用</th>
+                <th>Status</th>
+                <th>Cost</th>
             </tr>
         </thead>
         <tbody>
@@ -249,15 +249,15 @@ DASHBOARD_TEMPLATE = TEMPLATE + r"""
         </tbody>
     </table>
     {% else %}
-    <p style="color: #999; text-align: center; padding: 2rem;">暂无作业记录</p>
+    <p style="color: #999; text-align: center; padding: 2rem;">No jobs found</p>
     {% endif %}
 </div>
 
 <div class="section">
-    <h2>集群节点</h2>
+    <h2>Cluster Nodes</h2>
     <table>
         <thead>
-            <tr><th>节点</th><th>状态</th><th>分区</th><th>CPU</th><th>已用内存</th><th>总内存</th></tr>
+            <tr><th>Node</th><th>Status</th><th>Partition</th><th>CPU</th><th>Used Mem</th><th>Total Mem</th></tr>
         </thead>
         <tbody>
             {% for n in nodes %}
@@ -279,7 +279,7 @@ DASHBOARD_TEMPLATE = TEMPLATE + r"""
 JOBS_TEMPLATE = TEMPLATE + r"""
 {% block content %}
 <div class="section">
-    <h2>作业历史</h2>
+    <h2>Jobs History</h2>
     <div class="form-row">
         <form method="get" action="/jobs">
             <label>时间范围：
@@ -299,15 +299,15 @@ JOBS_TEMPLATE = TEMPLATE + r"""
             <tr>
                 <th>JobID</th>
                 <th>名称</th>
-                <th>用户</th>
-                <th>分区</th>
+                <th>User</th>
+                <th>Partition</th>
                 <th>QoS</th>
-                <th>节点</th>
+                <th>Node</th>
                 <th>CPU</th>
-                <th>提交时间</th>
+                <th>Submit Time</th>
                 <th>时长</th>
-                <th>状态</th>
-                <th>费用</th>
+                <th>Status</th>
+                <th>Cost</th>
             </tr>
         </thead>
         <tbody>
@@ -329,7 +329,7 @@ JOBS_TEMPLATE = TEMPLATE + r"""
         </tbody>
     </table>
     {% else %}
-    <p style="color: #999; text-align: center; padding: 2rem;">暂无作业记录</p>
+    <p style="color: #999; text-align: center; padding: 2rem;">No jobs found</p>
     {% endif %}
 </div>
 {% endblock %}
@@ -338,15 +338,15 @@ JOBS_TEMPLATE = TEMPLATE + r"""
 USAGE_TEMPLATE = TEMPLATE + r"""
 {% block content %}
 <div class="section">
-    <h2>用户用量统计</h2>
+    <h2>User Usage Stats</h2>
     {% if usage %}
     <table>
         <thead>
             <tr>
-                <th>用户</th>
-                <th>作业数</th>
-                <th>总 CPU 时</th>
-                <th>总费用</th>
+                <th>User</th>
+                <th>Jobs</th>
+                <th>Total CPU Hours</th>
+                <th>总Cost</th>
             </tr>
         </thead>
         <tbody>
@@ -412,7 +412,7 @@ def format_duration(seconds):
 
 
 def calculate_cost(ncpus, elapsed_seconds, qos="normal"):
-    """根据 CPU 数和时长计算费用"""
+    """根据 CPU 数和时长计算Cost"""
     cpu_hours = ncpus * (elapsed_seconds / 3600)
     rate = RATES.get(qos, RATES["normal"])
     return cpu_hours * rate
@@ -425,24 +425,34 @@ def get_slurm_version():
 
 
 def get_node_info():
-    """获取节点信息"""
-    out = run_cmd("sinfo -N -o '%n|%t|%P|%T|%e|%m' --noheader 2>/dev/null")
+    """获取Node信息"""
+    out = run_cmd("sinfo -N -o '%n|%t|%P|%e|%m|%C' --noheader 2>/dev/null")
     if not out:
         return []
 
-    nodes = []
+    seen = {}
     for line in out.strip().split("\n"):
         parts = line.split("|")
-        if len(parts) >= 6:
-            nodes.append({
-                "name": parts[0],
-                "state": parts[1],
-                "partition": parts[2],
-                "mem_total": parts[3].strip() if parts[3] else "0",
-                "mem_used": parts[4].strip(),
-                "cpus": parts[5].strip(),
-            })
-    return nodes
+        if len(parts) < 6:
+            continue
+        name = parts[0].strip()
+        cpu_str = parts[5].strip()
+        try:
+            cpu_parts = cpu_str.split("/")
+            total_cpus = int(cpu_parts[-1])
+        except (ValueError, IndexError):
+            total_cpus = 0
+        if name not in seen:
+            seen[name] = {
+                "name": name,
+                "state": parts[1].strip(),
+                "partition": parts[2].strip(),
+                "mem_free": int(parts[3]) if parts[3].strip().isdigit() else 0,
+                "mem_total": int(parts[4]) if parts[4].strip().isdigit() else 0,
+                "mem_used": int(parts[4]) - int(parts[3]) if parts[3].strip().isdigit() and parts[4].strip().isdigit() else 0,
+                "cpus": total_cpus,
+            }
+    return list(seen.values())
 
 
 def get_jobs(hours=24):
@@ -508,7 +518,7 @@ def get_dashboard_stats(jobs):
     total_cost = sum(j["cost"] for j in jobs)
     completed = sum(1 for j in jobs if j["state"] == "COMPLETED")
 
-    # 获取节点数
+    # 获取Node数
     nodes = get_node_info()
     online = sum(1 for n in nodes if n["state"] in ("idle", "mix", "alloc"))
 
@@ -521,7 +531,7 @@ def get_dashboard_stats(jobs):
 
 
 def get_usage_by_user(jobs):
-    """按用户统计用量"""
+    """按User统计用量"""
     usage = {}
     for j in jobs:
         user = j["user"]
