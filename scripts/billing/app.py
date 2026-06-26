@@ -191,7 +191,7 @@ DASHBOARD_TEMPLATE = TEMPLATE + r"""
         <div class="label">Jobs Done</div>
     </div>
     <div class="stat-card gold">
-        <div class="value">{{ stats.total_cost }} 元</div>
+        <div class="value">{{ stats.total_cost }} Kr</div>
         <div class="label">Total Cost</div>
     </div>
     <div class="stat-card">
@@ -241,7 +241,7 @@ DASHBOARD_TEMPLATE = TEMPLATE + r"""
                 <td>{{ j.ncpus }}</td>
                 <td>{{ j.elapsed }}</td>
                 <td><span class="badge {{ j.state }}">{{ j.state }}</span></td>
-                <td class="cost">{{ "%.2f"|format(j.cost) }} 元</td>
+                <td class="cost">{{ "%.2f"|format(j.cost) }} Kr</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -321,7 +321,7 @@ JOBS_TEMPLATE = TEMPLATE + r"""
                 <td>{{ j.submit_time }}</td>
                 <td>{{ j.elapsed }}</td>
                 <td><span class="badge {{ j.state }}">{{ j.state }}</span></td>
-                <td class="cost">{{ "%.2f"|format(j.cost) }} 元</td>
+                <td class="cost">{{ "%.2f"|format(j.cost) }} Kr</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -353,7 +353,7 @@ USAGE_TEMPLATE = TEMPLATE + r"""
                 <td>{{ u.user }}</td>
                 <td>{{ u.jobs }}</td>
                 <td>{{ "%.2f"|format(u.cpu_hours) }} h</td>
-                <td class="cost">{{ "%.2f"|format(u.cost) }} 元</td>
+                <td class="cost">{{ "%.2f"|format(u.cost) }} Kr</td>
             </tr>
             {% endfor %}
         </tbody>
