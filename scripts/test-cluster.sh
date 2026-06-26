@@ -138,9 +138,17 @@ header "11. sbatch submission test"
 JOB_ID=$(sbatch --parsable /home/scripts/jobs/hello_openmp.sbatch 2>&1)
 if echo "$JOB_ID" | grep -qE '^[0-9]+'; then
   log_pass "sbatch submitted: job $JOB_ID"
-  sleep 2
-  sacct -j "$JOB_ID" --noheader --format=State 2>/dev/null | head -1 | grep -qE 'COMPLETED|RUNNING' && \
-    log_pass "sbatch job $JOB_ID OK" || log_fail "sbatch job $JOB_ID state unclear"
+  # Poll for job completion (up to 10s)
+  local WAIT=0
+  local STATE=""
+  while [ $WAIT -lt 10 ]; do
+    sleep 2
+    STATE=$(sacct -j "$JOB_ID" --noheader --format=State 2>/dev/null | head -1 | tr -d ' ')
+    echo "$STATE" | grep -qE 'COMPLETED|RUNNING' && break
+    WAIT=$((WAIT + 2))
+  done
+  echo "$STATE" | grep -qE 'COMPLETED|RUNNING' && \
+    log_pass "sbatch job $JOB_ID OK" || log_fail "sbatch job $JOB_ID state unclear (state=$STATE)"
 else
   log_fail "sbatch failed: $JOB_ID"
 fi

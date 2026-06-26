@@ -209,8 +209,8 @@ DASHBOARD_TEMPLATE = TEMPLATE + r"""
                     <option value="1" {% if hours == 1 %}selected{% endif %}>1 hour</option>
                     <option value="6" {% if hours == 6 %}selected{% endif %}>6 hours</option>
                     <option value="24" {% if hours == 24 %}selected{% endif %}>24 hours</option>
-                    <option value="168" {% if hours == 168 %}selected{% endif %}>7 天</option>
-                    <option value="720" {% if hours == 720 %}selected{% endif %}>30 天</option>
+                    <option value="168" {% if hours == 168 %}selected{% endif %}>7 days</option>
+                    <option value="720" {% if hours == 720 %}selected{% endif %}>30 days</option>
                 </select>
             </label>
         </form>
@@ -282,11 +282,11 @@ JOBS_TEMPLATE = TEMPLATE + r"""
         <form method="get" action="/jobs">
             <label>时间范围：
                 <select name="hours" onchange="this.form.submit()">
-                    <option value="1" {% if hours == 1 %}selected{% endif %}>最近 1 小时</option>
-                    <option value="6" {% if hours == 6 %}selected{% endif %}>最近 6 小时</option>
-                    <option value="24" {% if hours == 24 %}selected{% endif %}>最近 24 小时</option>
-                    <option value="168" {% if hours == 168 %}selected{% endif %}>最近 7 天</option>
-                    <option value="all" {% if hours == 'all' %}selected{% endif %}>全部</option>
+                    <option value="1" {% if hours == 1 %}selected{% endif %}>Last 1 hour</option>
+                    <option value="6" {% if hours == 6 %}selected{% endif %}>Last 6 hours</option>
+                    <option value="24" {% if hours == 24 %}selected{% endif %}>Last 24 hours</option>
+                    <option value="168" {% if hours == 168 %}selected{% endif %}>Last 7 days</option>
+                    <option value="all" {% if hours == 'all' %}selected{% endif %}>All</option>
                 </select>
             </label>
         </form>
