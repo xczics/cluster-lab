@@ -5,8 +5,27 @@ set -e
 
 # --- 通用初始化 ---
 
+# 创建 HPC 用户（幂等：仅首次运行创建）
+echo "[ENTRY] Creating HPC users..."
+HPC_USERS="user01 user02 user03"
+HPC_PASS="cluster123"
+getent group hpcusers >/dev/null 2>&1 || groupadd -g 1001 hpcusers
+for user in $HPC_USERS; do
+  if ! id "$user" &>/dev/null 2>&1; then
+    useradd -m -u 10${user##user} -g hpcusers -s /bin/bash "$user"
+    echo "$user:$HPC_PASS" | chpasswd
+    echo "[ENTRY] Created user $user (password: $HPC_PASS)"
+  fi
+done
+
+# 启用 SSH 密码认证（镜像默认可能关闭）
+echo "[ENTRY] Enabling SSH password authentication..."
+sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+sed -i 's/^KbdInteractiveAuthentication no/KbdInteractiveAuthentication yes/' /etc/ssh/sshd_config
+
 # 启动 SSH（跨节点 MPI 通信）
 echo "[ENTRY] Starting SSH..."
+mkdir -p /run/sshd
 /usr/sbin/sshd -D &
 sleep 1
 
