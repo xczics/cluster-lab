@@ -57,6 +57,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjson-c-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Billing dashboard
+RUN pip3 install --break-system-packages flask requests
+
 # 下载并编译 Slurm
 WORKDIR /tmp
 RUN set -ex \
