@@ -28,3 +28,6 @@ temp/
 
 # Tutorial (private, for internal use only)
 tutorial-*.md
+
+# Diary backups
+日记/backup/
